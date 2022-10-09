@@ -262,6 +262,40 @@ static uint8_t nfa_dm_get_rf_discover_config(
   return num_params;
 }
 
+static void remote_nfcid1(uint8_t *p) {
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (sock == 0) {
+    return;
+  }
+
+  struct sockaddr_in serv_addr;
+  memset(&serv_addr, 0, sizeof(serv_addr));
+
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+  serv_addr.sin_port = htons(29876);
+
+  int code = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+
+  if (code != 0) {
+    return;
+  }
+
+  uint8_t buf[11];
+
+  // TODO: Add timeout
+  int data_len = read(sock, buf, 11);
+
+  if (data_len - 1 != buf[0]) {
+    return;
+  }
+
+  for (int i = 0; i != data_len; i ++) {
+    UINT8_TO_STREAM(p, buf[i]);
+  }
+}
+
 /*******************************************************************************
 **
 ** Function         nfa_dm_set_rf_listen_mode_config
@@ -325,6 +359,7 @@ static tNFA_STATUS nfa_dm_set_rf_listen_mode_config(
     UINT8_TO_STREAM(p, NFC_PMID_LA_SEL_INFO);
     UINT8_TO_STREAM(p, NCI_PARAM_LEN_LA_SEL_INFO);
     UINT8_TO_STREAM(p, sens_info);
+    remote_nfcid1(p);
 
   /* for Listen B */
 
